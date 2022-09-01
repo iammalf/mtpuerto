@@ -1,61 +1,48 @@
-import { filter } from "lodash";
-import { sentenceCase } from "change-case";
 import { useState, useEffect } from "react";
 import TextField from "@mui/material/TextField";
-import { Link as RouterLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import FormControl from "@mui/material/FormControl";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import Switch from "@mui/material/Switch";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+import SearchIcon from "@mui/icons-material/Search";
+import CardMedia from "@mui/material/CardMedia";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
+import ReCAPTCHA from "react-google-recaptcha";
 // material
 import {
+  Alert,
   Card,
-  Table,
   Stack,
-  Avatar,
   Button,
-  Checkbox,
-  TableRow,
-  TableBody,
-  TableCell,
   Container,
   Typography,
-  TableContainer,
-  TablePagination,
+  InputLabel,
+  Select,
+  Grid,
+  MenuItem,
 } from "@mui/material";
 
 import {
   collection,
   query,
   onSnapshot,
-  deleteDoc,
-  doc,
   addDoc,
   serverTimestamp,
+  getDocs,
+  where,
 } from "firebase/firestore";
 import { db } from "../firebase";
 // components
 import Page from "../components/Page";
-import Label from "../components/Label";
-import Scrollbar from "../components/Scrollbar";
 import Iconify from "../components/Iconify";
-import SearchNotFound from "../components/SearchNotFound";
-import {
-  UserListHead,
-  UserListToolbar,
-  UserMoreMenu,
-} from "../sections/@dashboard/user";
 // mock
-import USERLIST from "../_mock/user";
 
 //CODIGO DATAGRID
 const columns = [
@@ -93,50 +80,61 @@ const columns = [
 
 // ----------------------------------------------------------------------
 
-const TABLE_HEAD = [
-  { id: "name", label: "Name", alignRight: false },
-  { id: "company", label: "Company", alignRight: false },
-  { id: "role", label: "Role", alignRight: false },
-  { id: "isVerified", label: "Verified", alignRight: false },
-  { id: "status", label: "Status", alignRight: false },
-  { id: "" },
-];
-
-// ----------------------------------------------------------------------
-
-function descendingComparator(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-function getComparator(order, orderBy) {
-  return order === "desc"
-    ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
-}
-
-function applySortFilter(array, comparator, query) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-  if (query) {
-    return filter(
-      array,
-      (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1
-    );
-  }
-  return stabilizedThis.map((el) => el[0]);
-}
-
 export default function User() {
+  //TODO RESULTADO
+  const [show, setShow] = useState(false);
+  //TODO BUSQUEDA
+  const [valor, setValor] = useState("");
+  const [valorName, setValorName] = useState("");
+  const [cacas, setCacas] = useState("");
+  const [dataSearch, setDataSearch] = useState({});
+  console.log(dataSearch);
+
+  const busquedaDoc = async (e) => {
+    e.preventDefault();
+    const q = query(collection(db, "users"), where("docID", "==", valor));
+
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      setDataSearch(doc.data());
+    });
+  };
+
+  const busquedaLicencia = async (e) => {
+    e.preventDefault();
+    const q = query(collection(db, "users"), where("nroLicencia", "==", cacas));
+
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      setDataSearch(doc.data());
+    });
+  };
+
+  const busquedaName = async (e) => {
+    e.preventDefault();
+    const q = query(collection(db, "users"), where("name", "==", valorName));
+
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      setDataSearch(doc.data());
+    });
+  };
+
+  //TODO RADIOS
+  const [tipo, setTipo] = useState("documento");
+  console.log(tipo);
+  const handleChangeRadio = (event) => {
+    setTipo(event.target.value);
+  };
+  //TODO CODIGO SELECT
+  const [tipodoc, setTipodoc] = useState("");
+  const handleChangeSelect = (event) => {
+    setTipodoc(event.target.value);
+  };
+
   // TODO FIRESTORE
   const [name, setName] = useState("");
   const [docid, setDocid] = useState("");
@@ -145,22 +143,45 @@ export default function User() {
   const [vigencia, setVigencia] = useState("");
   const [estadovigencia, setEstadovigencia] = useState("");
 
-  // CODIGO ADD USER
+  // TODO VALIDATION FORM
+  const [error, setError] = useState(false);
+
+  //TODO  CODIGO ADD USER
   const handleUser = async (e) => {
     e.preventDefault();
-    try {
-      // REGISTRO DE USUARIO EN LA COLECCION
-      await addDoc(collection(db, "users"), {
-        name: name,
-        docID: docid,
-        nroLicencia: nrolicencia,
-        classCategory: clascat,
-        vigencia: vigencia,
-        estadoVigencia: estadovigencia,
-        timeStamp: serverTimestamp(),
-      });
-    } catch (error) {
-      console.log(error);
+    if (
+      name.length === 0 ||
+      docid.length === 0 ||
+      nrolicencia.length === 0 ||
+      clascat.length === 0 ||
+      vigencia.length === 0 ||
+      estadovigencia.length === 0
+    ) {
+      setError(true);
+    }
+    if (name && docid && nrolicencia && clascat && vigencia && estadovigencia) {
+      try {
+        // TODO REGISTRO DE USUARIO EN LA COLECCION
+        await addDoc(collection(db, "users"), {
+          name: name,
+          docID: docid,
+          nroLicencia: nrolicencia,
+          classCategory: clascat,
+          vigencia: vigencia,
+          estadoVigencia: estadovigencia,
+          timeStamp: serverTimestamp(),
+        });
+
+        setName("");
+        setDocid("");
+        setNroLicencia("");
+        setClasscat("");
+        setVigencia("");
+        setEstadovigencia("");
+        handleClose();
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
   // TODO CODIGO OBTENCION DE USUARIOS
@@ -203,123 +224,481 @@ export default function User() {
     setFullWidth(event.target.checked);
   };
 
-  // TODO CODIGO DE PLANTILLA
+  function recaptcha() {
+    console.log("Captcha value:");
+  }
 
   return (
-    <Page title="User">
-      <Container>
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          mb={5}
-        >
-          <Typography variant="h4" gutterBottom>
-            User
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={handleClickOpen}
-            to="#"
-            startIcon={<Iconify icon="eva:plus-fill" />}
+    <>
+      <Page title="Registro / Búsqueda">
+        <Container>
+          <Stack alignItems="center" mb={5}>
+            <Card>
+              <CardMedia
+                component="img"
+                height="80"
+                image="/static/images/pcm.png"
+                alt="green iguana"
+              />
+            </Card>
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={5}
           >
-            New User
-          </Button>
-        </Stack>
-
-        <Card>
-          <Box sx={{ height: 400, width: "100%" }}>
-            <DataGrid
-              rows={users}
-              columns={columns}
-              pageSize={5}
-              components={{ Toolbar: GridToolbar }}
-              rowsPerPageOptions={[5, 10, 20]}
-              checkboxSelection
-              disableSelectionOnClick
-              experimentalFeatures={{ newEditingApi: true }}
-            />
-          </Box>
-        </Card>
-
-        {/* //TODO MODAL ADD */}
-        <Dialog
-          fullWidth={fullWidth}
-          maxWidth={maxWidth}
-          open={open}
-          onClose={handleClose}
-        >
-          <form onSubmit={handleUser}>
-            <DialogTitle>Registro de Usuarios</DialogTitle>
-            <DialogContent>
-              <DialogContentText>Complete todos los Datos</DialogContentText>
-
-              <Box
-                component="form"
-                sx={{
-                  "& .MuiTextField-root": { m: 1, width: "25ch" },
-                }}
-                noValidate
-                autoComplete="off"
+            <Typography variant="h3" gutterBottom>
+              Sistema de Licencia de Motos
+            </Typography>
+            <Card>
+              <CardMedia
+                component="img"
+                height="150"
+                image="/static/images/motos1.jpeg"
+                alt="green iguana"
+              />
+            </Card>
+            <Card>
+              <CardMedia
+                component="img"
+                height="150"
+                image="/static/images/motos2.jpg"
+                alt="green iguana"
+              />
+            </Card>
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={5}
+          >
+            <Typography variant="h4" gutterBottom>
+              Registro / Búsqueda
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={handleClickOpen}
+              to="#"
+              startIcon={<Iconify icon="eva:plus-fill" />}
+            >
+              Registrar Nuevo
+            </Button>
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={5}
+          >
+            <FormControl>
+              <FormLabel id="demo-row-radio-buttons-group-label">
+                Tipo de Busqueda
+              </FormLabel>
+              <RadioGroup
+                row
+                aria-labelledby="demo-row-radio-buttons-group-label"
+                name="row-radio-buttons-group"
+                value={tipo}
+                onChange={handleChangeRadio}
               >
-                <div>
-                  <TextField
-                    id="outlined-error"
-                    label="Nombres"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                  <TextField
-                    id="outlined-error"
-                    label="Documento Identidad"
-                    value={docid}
-                    onChange={(e) => setDocid(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <TextField
-                    id="outlined-error"
-                    label="Nro. Licencia"
-                    value={nrolicencia}
-                    onChange={(e) => setNroLicencia(e.target.value)}
-                  />
-                  <TextField
-                    id="outlined-error"
-                    label="Clase y Categoría"
-                    value={clascat}
-                    onChange={(e) => setClasscat(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <TextField
-                    id="outlined-error"
-                    label="Vigencia Hasta"
-                    value={vigencia}
-                    onChange={(e) => setVigencia(e.target.value)}
-                  />
-                  <TextField
-                    id="outlined-error"
-                    label="Estado de Vigencia"
-                    value={estadovigencia}
-                    onChange={(e) => setEstadovigencia(e.target.value)}
-                  />
-                </div>
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>Cancel</Button>
-              <Button
-                type="submit"
-                onClick={handleClose}
-                variant="contained"
-                color="primary"
-              >
-                Create
-              </Button>
-            </DialogActions>
-          </form>
-        </Dialog>
-      </Container>
-    </Page>
+                <FormControlLabel
+                  value="documento"
+                  control={<Radio />}
+                  label="Por Nro. Documento"
+                />
+                <FormControlLabel
+                  value="licencia"
+                  control={<Radio />}
+                  label="Por Nro. Licencia"
+                />
+                <FormControlLabel
+                  value="nombres"
+                  control={<Radio />}
+                  label="Por Apellidos y Nombres Completos"
+                />
+              </RadioGroup>
+            </FormControl>
+          </Stack>
+
+          {tipo === "documento" && (
+            <>
+              <form onSubmit={busquedaDoc}>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={2} md={2}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <InputLabel id="demo-simple-select-label">
+                        Tipo Documento
+                      </InputLabel>
+                      <Select
+                        value={tipodoc}
+                        label="Tipo Documento"
+                        onChange={handleChangeSelect}
+                      >
+                        <MenuItem value={"DNI"}>DNI</MenuItem>
+                        <MenuItem value={"CARNET"}>CARNET</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        label="Nro. de Documento"
+                        variant="outlined"
+                        value={valor}
+                        onChange={(e) => setValor(e.target.value)}
+                      />
+                    </FormControl>
+                  </Grid>
+                </Grid>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <ReCAPTCHA
+                        sitekey="6Ld9msYhAAAAANXjXz-4QczpfPTVsafTinNrzPQd"
+                        onChange={recaptcha}
+                      />
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        onClick={() => setShow(true)}
+                        endIcon={<SearchIcon />}
+                        size="large"
+                      >
+                        Buscar
+                      </Button>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </form>
+            </>
+          )}
+
+          {tipo === "licencia" && (
+            <>
+              <form onSubmit={busquedaLicencia}>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        label="Nro. Licencia"
+                        variant="outlined"
+                        value={cacas}
+                        onChange={(e) => setCacas(e.target.value)}
+                      />
+                    </FormControl>
+                  </Grid>
+                </Grid>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <ReCAPTCHA
+                        sitekey="6Ld9msYhAAAAANXjXz-4QczpfPTVsafTinNrzPQd"
+                        onChange={recaptcha}
+                      />
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        onClick={() => setShow(true)}
+                        endIcon={<SearchIcon />}
+                        size="large"
+                      >
+                        Buscar
+                      </Button>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </form>
+            </>
+          )}
+
+          {tipo === "nombres" && (
+            <>
+              <form onSubmit={busquedaName}>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        label="Nombres y Apellidos"
+                        variant="outlined"
+                        value={valorName}
+                        onChange={(e) => setValorName(e.target.value)}
+                      />
+                    </FormControl>
+                  </Grid>
+                </Grid>
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <ReCAPTCHA
+                        sitekey="6Ld9msYhAAAAANXjXz-4QczpfPTVsafTinNrzPQd"
+                        onChange={recaptcha}
+                      />
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4} md={4}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        onClick={() => setShow(true)}
+                        endIcon={<SearchIcon />}
+                        size="large"
+                      >
+                        Buscar
+                      </Button>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </form>
+            </>
+          )}
+
+          {show && (
+            <Stack alignItems="center" mb={5}>
+              <Typography variant="subtitle2" gutterBottom>
+                Nombres: {dataSearch.name}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Nro. Documento de Identidad: {dataSearch.docID}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Nro. Licencia: {dataSearch.nroLicencia}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Clase y Categoría: {dataSearch.classCategory}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Vigencia hasta: {dataSearch.vigencia}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Estado de la Licencia: {dataSearch.estadoVigencia}
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Faltas
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Muy Grave(s):
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Grave(s):
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Sus puntos firmes Acumulados son:
+              </Typography>
+            </Stack>
+          )}
+
+          <Card>
+            <Box sx={{ height: 400, width: "100%" }}>
+              <DataGrid
+                rows={users}
+                columns={columns}
+                pageSize={5}
+                components={{ Toolbar: GridToolbar }}
+                rowsPerPageOptions={[5, 10, 20]}
+                checkboxSelection
+                disableSelectionOnClick
+                experimentalFeatures={{ newEditingApi: true }}
+              />
+            </Box>
+          </Card>
+          {/* //TODO MODAL ADD */}
+          <Dialog
+            fullWidth={fullWidth}
+            maxWidth={maxWidth}
+            open={open}
+            onClose={handleClose}
+          >
+            <form onSubmit={handleUser}>
+              <DialogTitle>Registro de Usuarios</DialogTitle>
+              <DialogContent>
+                <DialogContentText>Complete todos los Datos</DialogContentText>
+
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Nombres"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                      {error && name.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Nombes es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Documento Identidad"
+                        required
+                        value={docid}
+                        onChange={(e) => setDocid(e.target.value)}
+                      />
+                      {error && docid.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Documento de Identidad es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Nro. Licencia"
+                        required
+                        value={nrolicencia}
+                        onChange={(e) => setNroLicencia(e.target.value)}
+                      />
+                      {error && nrolicencia.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Nro. de Licencia es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Clase y Categoría"
+                        required
+                        value={clascat}
+                        onChange={(e) => setClasscat(e.target.value)}
+                      />
+                      {error && clascat.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Clase y Categoría es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  columns={{ xs: 4, sm: 8, md: 12 }}
+                >
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Vigencia Hasta"
+                        required
+                        value={vigencia}
+                        onChange={(e) => setVigencia(e.target.value)}
+                      />
+                      {error && vigencia.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Vigencia es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={6}>
+                    <FormControl fullWidth sx={{ m: 1 }}>
+                      <TextField
+                        id="outlined-error"
+                        label="Estado de Vigencia"
+                        required
+                        value={estadovigencia}
+                        onChange={(e) => setEstadovigencia(e.target.value)}
+                      />
+                      {error && estadovigencia.length <= 0 ? (
+                        <Stack sx={{ width: "100%" }} spacing={2}>
+                          <Alert severity="error">
+                            El campo Estado de Vigencia es requerido
+                          </Alert>
+                        </Stack>
+                      ) : (
+                        ""
+                      )}
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose}>Cancel</Button>
+                <Button type="submit" variant="contained" color="primary">
+                  Create
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+        </Container>
+      </Page>
+    </>
   );
 }
