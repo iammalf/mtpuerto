@@ -4,8 +4,10 @@ import { useContext } from "react";
 import DashboardLayout from "./layouts/dashboard";
 import LogoOnlyLayout from "./layouts/LogoOnlyLayout";
 //
-
+import Search from "./pages/Search";
 import User from "./pages/User";
+import NewUser from "./pages/NewUser";
+import EditUser from "./pages/EditUser";
 import Login from "./pages/Login";
 import NotFound from "./pages/Page404";
 import Register from "./pages/Register";
@@ -45,11 +47,31 @@ export default function Router() {
             </RequireAuth>
           ),
         },
+        {
+          path: "newuser",
+          element: (
+            <RequireAuth>
+              <NewUser />
+            </RequireAuth>
+          ),
+        },
+        {
+          path: "edituser/:id",
+          element: (
+            <RequireAuth>
+              <EditUser />
+            </RequireAuth>
+          ),
+        },
       ],
     },
     {
       path: "login",
       element: <Login />,
+    },
+    {
+      path: "search",
+      element: <Search />,
     },
     {
       path: "register",
@@ -59,7 +81,7 @@ export default function Router() {
       path: "/",
       element: <LogoOnlyLayout />,
       children: [
-        { path: "/", element: <Navigate to="/dashboard/app" /> },
+        { path: "/", element: <Navigate to="/search" /> },
         { path: "404", element: <NotFound /> },
         { path: "*", element: <Navigate to="/404" /> },
       ],
