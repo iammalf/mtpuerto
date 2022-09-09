@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import moment from "moment";
 // @mui
 import { styled } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
@@ -439,6 +440,18 @@ function Search() {
                     </Typography>
                     <Typography variant="subtitle2" gutterBottom>
                       Clase y Categoría: {data.classCategory}
+                    </Typography>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Fecha de Emisión:{" "}
+                      {moment(
+                        new Date(data.fechaEmision.toDate()).toUTCString()
+                      ).format("DD/MM/YYYY")}
+                    </Typography>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Fecha de Expedición:{" "}
+                      {moment(
+                        new Date(data.fechaExpedicion.toDate()).toUTCString()
+                      ).format("DD/MM/YYYY")}
                     </Typography>
                     <Typography variant="subtitle2" gutterBottom>
                       Estado de la Licencia: {data.estadoLicencia}

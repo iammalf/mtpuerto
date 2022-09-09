@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import moment from "moment";
 
 // TODO MUI COMPONENTS
 import {
@@ -34,7 +35,7 @@ export default function User() {
   // TODO CODIGO OBTENCION DE USUARIOS
   const [users, setUsers] = useState([]);
 
-  // READ USERS FROM FIREBASE
+  // TODO READ USERS FROM FIREBASE
   useEffect(() => {
     const q = query(collection(db, "users"));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -67,26 +68,27 @@ export default function User() {
     {
       field: "nroLicencia",
       headerName: "Nro. Licencia",
-      width: 150,
+      width: 130,
     },
     {
       field: "classCategory",
       headerName: "Clase y Categoría",
-      width: 150,
+      width: 130,
     },
-    /* {
+    {
       field: "fechaEmision",
       headerName: "Fecha de Emisión",
-      type: "date",
-      width: 350,
+      width: 130,
       valueFormatter: (params) =>
-        moment(params.value.toDate()).format("YYYY-MM-DD"),
+        moment(params.value.toDate()).format("DD-MM-YYYY"),
     },
     {
       field: "fechaExpedicion",
       headerName: "Fecha de Expedición",
-      width: 200,
-    }, */
+      width: 130,
+      valueFormatter: (params) =>
+        moment(params.value.toDate()).format("DD-MM-YYYY"),
+    },
     {
       field: "estadoLicencia",
       headerName: "Estado de Vigencia",
