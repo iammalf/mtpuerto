@@ -263,7 +263,7 @@ function Search() {
                         >
                           <MenuItem value={"DNI"}>DNI</MenuItem>
                           <MenuItem value={"CARNET"}>
-                            CARNÉ DE ESTRANJERÍA
+                            CARNET DE ESTRANJERÍA
                           </MenuItem>
                         </Select>
                       </FormControl>
