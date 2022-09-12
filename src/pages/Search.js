@@ -258,6 +258,7 @@ function Search() {
                         </InputLabel>
                         <Select
                           value={tipodoc}
+                          required
                           label="Tipo Documento"
                           onChange={handleChangeSelect}
                         >
@@ -273,6 +274,7 @@ function Search() {
                         <TextField
                           label="Nro. de Documento"
                           variant="outlined"
+                          required
                           value={valor}
                           onChange={(e) => setValor(e.target.value)}
                         />
@@ -328,6 +330,7 @@ function Search() {
                         <TextField
                           label="Nro. Licencia"
                           variant="outlined"
+                          required
                           value={cacas}
                           onChange={(e) => setCacas(e.target.value)}
                         />
@@ -383,6 +386,7 @@ function Search() {
                         <TextField
                           label="Nombres y Apellidos"
                           variant="outlined"
+                          required
                           value={valorName}
                           onChange={(e) => setValorName(e.target.value)}
                         />
@@ -442,13 +446,13 @@ function Search() {
                       Clase y Categoría: {data.classCategory}
                     </Typography>
                     <Typography variant="subtitle2" gutterBottom>
-                      Fecha de Emisión:{" "}
+                      Fecha de Expedición:{" "}
                       {moment(
                         new Date(data.fechaEmision.toDate()).toUTCString()
                       ).format("DD/MM/YYYY")}
                     </Typography>
                     <Typography variant="subtitle2" gutterBottom>
-                      Fecha de Expedición:{" "}
+                      Fecha de Revalidación:{" "}
                       {moment(
                         new Date(data.fechaExpedicion.toDate()).toUTCString()
                       ).format("DD/MM/YYYY")}

@@ -105,6 +105,7 @@ function NewUser() {
                   <InputLabel id="tipodoc">Tipo Documento</InputLabel>
                   <Select
                     label="Tipo de Documento"
+                    required
                     onChange={handleTipoDocumento}
                     value={tipoDoc}
                   >
@@ -164,7 +165,7 @@ function NewUser() {
                     <DatePicker
                       openTo="year"
                       views={["year", "month", "day"]}
-                      label="Fecha de Emisión"
+                      label="Fecha de Expedición"
                       inputFormat="dd-MM-yyyy"
                       value={fechaEmision}
                       onChange={(newValue) => {
@@ -190,7 +191,7 @@ function NewUser() {
                     <DatePicker
                       openTo="year"
                       views={["year", "month", "day"]}
-                      label="Fecha de Expedición"
+                      label="Fecha de Revalidación"
                       inputFormat="dd-MM-yyyy"
                       value={fechaExpedicion}
                       onChange={(newValue) => {
@@ -208,6 +209,7 @@ function NewUser() {
                   <InputLabel id="tipodoc">Estado de Licencia</InputLabel>
                   <Select
                     label="Estado de Licencia"
+                    required
                     onChange={handleEstadoVigencia}
                     value={estadoLicencia}
                   >

@@ -185,7 +185,7 @@ function EditUser() {
                     <DatePicker
                       openTo="year"
                       views={["year", "month", "day"]}
-                      label="Fecha de Emisión"
+                      label="Fecha de Expedición"
                       inputFormat="dd-MM-yyyy"
                       value={fechaEmision}
                       onChange={(newValue) => {
@@ -211,7 +211,7 @@ function EditUser() {
                     <DatePicker
                       openTo="year"
                       views={["year", "month", "day"]}
-                      label="Fecha de Expedición"
+                      label="Fecha de Revalidación"
                       inputFormat="dd-MM-yyyy"
                       value={fechaExpedicion}
                       onChange={(newValue) => {
